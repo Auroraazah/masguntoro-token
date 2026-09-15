@@ -2,73 +2,78 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MasGuntoro Live</title>
-<style>
-body{font-family:Arial;background:#111;color:#fff;margin:0;padding:20px;text-align:center}
-h1{color:#00ff88}
-#videos{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
-.video-box{width:45%;min-width:300px;height:300px;background:#222;border-radius:12px;border:2px solid #333;overflow:hidden}
-button{padding:12px 25px;margin:5px;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-weight:bold}
-#joinBtn{background:#00ff88;color:#000}
-#leaveBtn{background:#ff4444;color:#fff}
-input{padding:12px;border-radius:8px;border:none;width:200px;font-size:16px}
-</style>
 <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+<style>
+body{background:#0f0f0f;color:#fff;font-family:Arial;text-align:center;padding:15px;margin:0}
+h1{color:#00ff88;margin:10px 0}
+.card{background:#1e1e1e;padding:15px;border-radius:12px;max-width:500px;margin:15px auto}
+input{width:90%;padding:12px;margin:6px 0;border-radius:8px;border:none;font-size:16px}
+button{padding:12px 24px;border:none;border-radius:8px;font-weight:bold;font-size:16px;cursor:pointer;margin:5px}
+#join{background:#00ff88;color:#000;width:90%}
+#leave{background:#ff4444;color:#fff;display:none;width:90%}
+#videos{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:15px}
+.v{width:340px;height:260px;background:#222;border-radius:12px;overflow:hidden;border:2px solid #333}
+#status{color:#aaa;margin-top:10px}
+</style>
 </head>
 <body>
 <h1>🎥 MasGuntoro Live</h1>
-<input id="channel" value="ruang-tes-123">
-<div style="margin-top:20px">
-<button id="joinBtn">Join Call</button>
-<button id="leaveBtn" style="display:none">Leave</button>
+<div class="card">
+<input id="appId" placeholder="Paste APP ID Agora di sini">
+<input id="channel" value="ruang-tes-123" placeholder="Nama Room">
+<button id="join">JOIN CALL</button>
+<button id="leave">LEAVE</button>
+<p id="status">Belum join</p>
 </div>
-<p id="status">Status: Belum join</p>
-<div id="videos">
-<div id="local" class="video-box"></div>
-<div id="remote" class="video-box"></div>
-</div>
+<div id="videos"><div id="me" class="v"></div><div id="you" class="v"></div></div>
 <script>
-const APP_ID = "MASUKKAN_APP_ID_DISINI";
-const TOKEN_SERVER = "https://masguntoro-token.vercel.app";
-const client = AgoraRTC.createClient({mode:"rtc", codec:"vp8"});
-let localTracks = [];
-async function getToken(channel, uid){
-  const endpoints = ["/rtc-token", "/api/rtc-token", "/access_token", "/"];
-  for(let ep of endpoints){
-    try{
-      const res = await fetch(TOKEN_SERVER + ep, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({channelName: channel, channel: channel, uid: uid||0, role: "publisher", expireTime: 3600})
-      });
-      const data = await res.json();
-      let token = data.token || data.rtcToken;
-      if(token) return token;
-    }catch(e){}
-  }
-  throw new Error("Gagal dapat token");
-}
-document.getElementById("joinBtn").onclick = async () => {
-  const channel = document.getElementById("channel").value;
-  const token = await getToken(channel, 0);
-  await client.join(APP_ID, channel, token, null);
-  localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
-  localTracks[1].play("local");
-  await client.publish(localTracks);
-  document.getElementById("status").innerText = "Terhubung: "+channel;
-  document.getElementById("joinBtn").style.display="none";
-  document.getElementById("leaveBtn").style.display="inline-block";
-  client.on("user-published", async (user, mediaType)=>{
-    await client.subscribe(user, mediaType);
-    if(mediaType==="video") user.videoTrack.play("remote");
-    if(mediaType==="audio") user.audioTrack.play();
+const TOKEN_URL = "https://masguntoro-token.vercel.app";
+const client = AgoraRTC.createClient({mode:"rtc",codec:"vp8"});
+let tracks=[];
+const appIdInput=document.getElementById("appId");
+const saved = localStorage.getItem("agora_app_id");
+if(saved) appIdInput.value=saved;
+
+async function getToken(channel){
+  document.getElementById("status").innerText="Minta token...";
+  const res = await fetch(TOKEN_URL+"/api/rtc-token",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({channelName:channel,uid:0})
   });
+  if(!res.ok) throw new Error("Token gagal: "+await res.text());
+  const data=await res.json();
+  return data.token || data.rtcToken;
+}
+
+document.getElementById("join").onclick=async()=>{
+  const APP_ID=appIdInput.value.trim();
+  const channel=document.getElementById("channel").value.trim();
+  if(!APP_ID) return alert("Isi APP ID dulu! Ambil di console.agora.io");
+  if(!channel) return alert("Isi nama room");
+  localStorage.setItem("agora_app_id",APP_ID);
+  try{
+    const token=await getToken(channel);
+    document.getElementById("status").innerText="Joining "+channel+"...";
+    await client.join(APP_ID,channel,token,null);
+    tracks=await AgoraRTC.createMicrophoneAndCameraTracks();
+    tracks[1].play("me");
+    await client.publish(tracks);
+    document.getElementById("status").innerText="✅ Terhubung: "+channel+" | Share link + nama room ke teman";
+    document.getElementById("join").style.display="none";
+    document.getElementById("leave").style.display="inline-block";
+    client.on("user-published",async(user,type)=>{
+      await client.subscribe(user,type);
+      if(type==="video") user.videoTrack.play("you");
+      if(type==="audio") user.audioTrack.play();
+    });
+  }catch(e){document.getElementById("status").innerText="Error: "+e.message;alert(e.message)}
 };
-document.getElementById("leaveBtn").onclick = async () => {
-  for(let t of localTracks){ t.stop(); t.close(); }
-  await client.leave();
-  location.reload();
+document.getElementById("leave").onclick=async()=>{
+  for(let t of tracks){t.stop();t.close();}
+  await client.leave(); location.reload();
 };
 </script>
 </body>
