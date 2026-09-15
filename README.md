@@ -1,0 +1,2 @@
+# masguntoro-token
+Server token
