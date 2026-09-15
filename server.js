@@ -1,37 +1,43 @@
 const express = require('express');
 const cors = require('cors');
-const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
+const path = require('path');
+require('dotenv').config();
+const { RtcTokenBuilder, RtcRole } = require('agora-token');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname));
+
+const APP_ID = process.env.APP_ID;
+const APP_CERT = process.env.APP_CERTIFICATE || process.env.APP_CERT;
 
 app.get('/', (req, res) => {
-  res.send('MasGuntoro Token Server OK');
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/rtc', (req, res) => {
-  try {
-    const channelName = req.query.channelName;
-    if (!channelName) return res.status(400).json({ error: 'channelName required' });
-    
-    const uid = req.query.uid ? parseInt(req.query.uid) : 0;
-    const appId = process.env.APP_ID;
-    const appCertificate = process.env.APP_CERT;
-
-    if (!appId || !appCertificate) {
-      return res.status(500).json({ error: 'APP_ID / APP_CERT belum di set di Vercel Settings -> Environment Variables' });
-    }
-
-    const role = RtcRole.PUBLISHER;
-    const expire = Math.floor(Date.now() / 1000) + 3600;
-    const token = RtcTokenBuilder.buildTokenWithUid(appId, appCertificate, channelName, uid, role, expire);
-    
-    res.json({ rtcToken: token, uid: uid });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
+app.post('/api/rtc-token', (req, res) => {
+  const channel = req.body.channelName || req.body.channel;
+  if (!channel) return res.status(400).json({error: 'channelName required'});
+  const uid = req.body.uid || 0;
+  const role = RtcRole.PUBLISHER;
+  const expire = 3600;
+  const now = Math.floor(Date.now()/1000);
+  const token = RtcTokenBuilder.buildTokenWithUid(APP_ID, APP_CERT, channel, uid, role, now + expire);
+  res.json({ token });
 });
 
+app.get('/api/rtc-token', (req, res) => {
+  const channel = req.query.channelName || req.query.channel;
+  if (!channel) return res.status(400).json({error: 'channelName required'});
+  const uid = req.query.uid || 0;
+  const role = RtcRole.PUBLISHER;
+  const expire = 3600;
+  const now = Math.floor(Date.now()/1000);
+  const token = RtcTokenBuilder.buildTokenWithUid(APP_ID, APP_CERT, channel, uid, role, now + expire);
+  res.json({ token });
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log('OK'));
 module.exports = app;
