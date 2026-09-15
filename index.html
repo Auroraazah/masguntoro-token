@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MasGuntoro Live</title>
+<style>
+body{font-family:Arial;background:#111;color:#fff;margin:0;padding:20px;text-align:center}
+h1{color:#00ff88}
+#videos{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.video-box{width:45%;min-width:300px;height:300px;background:#222;border-radius:12px;border:2px solid #333;overflow:hidden}
+button{padding:12px 25px;margin:5px;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-weight:bold}
+#joinBtn{background:#00ff88;color:#000}
+#leaveBtn{background:#ff4444;color:#fff}
+input{padding:12px;border-radius:8px;border:none;width:200px;font-size:16px}
+</style>
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+</head>
+<body>
+<h1>🎥 MasGuntoro Live</h1>
+<input id="channel" value="ruang-tes-123">
+<div style="margin-top:20px">
+<button id="joinBtn">Join Call</button>
+<button id="leaveBtn" style="display:none">Leave</button>
+</div>
+<p id="status">Status: Belum join</p>
+<div id="videos">
+<div id="local" class="video-box"></div>
+<div id="remote" class="video-box"></div>
+</div>
+<script>
+const APP_ID = "MASUKKAN_APP_ID_DISINI";
+const TOKEN_SERVER = "https://masguntoro-token.vercel.app";
+const client = AgoraRTC.createClient({mode:"rtc", codec:"vp8"});
+let localTracks = [];
+async function getToken(channel, uid){
+  const endpoints = ["/rtc-token", "/api/rtc-token", "/access_token", "/"];
+  for(let ep of endpoints){
+    try{
+      const res = await fetch(TOKEN_SERVER + ep, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({channelName: channel, channel: channel, uid: uid||0, role: "publisher", expireTime: 3600})
+      });
+      const data = await res.json();
+      let token = data.token || data.rtcToken;
+      if(token) return token;
+    }catch(e){}
+  }
+  throw new Error("Gagal dapat token");
+}
+document.getElementById("joinBtn").onclick = async () => {
+  const channel = document.getElementById("channel").value;
+  const token = await getToken(channel, 0);
+  await client.join(APP_ID, channel, token, null);
+  localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+  localTracks[1].play("local");
+  await client.publish(localTracks);
+  document.getElementById("status").innerText = "Terhubung: "+channel;
+  document.getElementById("joinBtn").style.display="none";
+  document.getElementById("leaveBtn").style.display="inline-block";
+  client.on("user-published", async (user, mediaType)=>{
+    await client.subscribe(user, mediaType);
+    if(mediaType==="video") user.videoTrack.play("remote");
+    if(mediaType==="audio") user.audioTrack.play();
+  });
+};
+document.getElementById("leaveBtn").onclick = async () => {
+  for(let t of localTracks){ t.stop(); t.close(); }
+  await client.leave();
+  location.reload();
+};
+</script>
+</body>
+</html>
