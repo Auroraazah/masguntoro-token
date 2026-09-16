@@ -21,20 +21,18 @@ button{padding:12px 24px;border:none;border-radius:8px;font-weight:bold;font-siz
 <body>
 <h1>🎥 MasGuntoro Live</h1>
 <div class="card">
-<input id="appId" placeholder="Paste APP ID Agora di sini">
-<input id="channel" value="ruang-tes-123" placeholder="Nama Room">
+<input type="hidden" id="appId" value="cf22b9c1495d4cc89b36a9a81f9cfa16">
+<input id="channel" value="ruang-tes-123" placeholder="Nama Room (harus sama dengan teman)">
 <button id="join">JOIN CALL</button>
 <button id="leave">LEAVE</button>
-<p id="status">Belum join</p>
+<p id="status">Siap join - tinggal klik JOIN</p>
 </div>
 <div id="videos"><div id="me" class="v"></div><div id="you" class="v"></div></div>
 <script>
 const TOKEN_URL = "https://masguntoro-token.vercel.app";
+const APP_ID_FIX = "cf22b9c1495d4cc89b36a9a81f9cfa16";
 const client = AgoraRTC.createClient({mode:"rtc",codec:"vp8"});
 let tracks=[];
-const appIdInput=document.getElementById("appId");
-const saved = localStorage.getItem("agora_app_id");
-if(saved) appIdInput.value=saved;
 
 async function getToken(channel){
   document.getElementById("status").innerText="Minta token...";
@@ -49,19 +47,16 @@ async function getToken(channel){
 }
 
 document.getElementById("join").onclick=async()=>{
-  const APP_ID=appIdInput.value.trim();
   const channel=document.getElementById("channel").value.trim();
-  if(!APP_ID) return alert("Isi APP ID dulu! Ambil di console.agora.io");
-  if(!channel) return alert("Isi nama room");
-  localStorage.setItem("agora_app_id",APP_ID);
+  if(!channel) return alert("Isi nama room dulu");
   try{
     const token=await getToken(channel);
     document.getElementById("status").innerText="Joining "+channel+"...";
-    await client.join(APP_ID,channel,token,null);
+    await client.join(APP_ID_FIX,channel,token,null);
     tracks=await AgoraRTC.createMicrophoneAndCameraTracks();
     tracks[1].play("me");
     await client.publish(tracks);
-    document.getElementById("status").innerText="✅ Terhubung: "+channel+" | Share link + nama room ke teman";
+    document.getElementById("status").innerText="✅ Terhubung: "+channel+" | Share link ini + nama room ke teman biar bisa join bareng";
     document.getElementById("join").style.display="none";
     document.getElementById("leave").style.display="inline-block";
     client.on("user-published",async(user,type)=>{
