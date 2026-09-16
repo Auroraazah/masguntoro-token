@@ -2,82 +2,44 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>MasGuntoro WA - Pasti Muncul</title>
-<script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
-<script src="https://download.agora.io/sdk/release/AgoraRTM_N.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chat FIX - Pasti Nyambung</title>
+<script src="https://download.agora.io/sdk/release/AgoraRTC_N_4.20.2.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <style>
-html, body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;position:fixed;background:#111b21}
-*{box-sizing:border-box}
-body{font-family:Arial;display:flex;flex-direction:column}
-.header{height:62px;min-height:62px;background:#fff;display:flex;align-items:center;padding:0 8px;gap:10px;flex-shrink:0}
-.top-ico{width:24px;height:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;background:#ddd;flex-shrink:0}
-.avatar img{width:100%;height:100%;object-fit:cover}
-.name{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.top-right{display:flex;gap:18px}
-.chat-area{flex:1;background:#e5ddd5 url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:6px}
-.msg{max-width:78%;padding:8px 10px;border-radius:8px;font-size:14px;background:#fff;word-break:break-word}
-.me{align-self:flex-end;background:#d9fdd3}
-.time{font-size:10px;color:#667781;float:right;margin:6px 0 0 8px}
-.input-bar{height:62px;min-height:62px;padding:6px 8px;background:#f0f2f5;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.input-box{flex:1;background:#fff;border-radius:25px;display:flex;align-items:center;padding:5px 10px;gap:6px;min-width:0}
-.input-box input{flex:1;width:0;min-width:0;border:none;outline:none;font-size:15px;background:transparent}
-.ico{width:24px;height:24px;min-width:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.mic-foto{width:48px;height:48px;min-width:48px;border-radius:50%;background:#00a884;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-#joinModal{position:fixed;inset:0;background:#000c;z-index:99;display:flex;align-items:center;justify-content:center}
-.join-card{background:#fff;padding:20px;border-radius:12px;width:85%;max-width:300px;text-align:center}
-.join-card input{width:100%;padding:12px;margin:5px 0;border:1px solid #ddd;border-radius:8px}
-.join-card button{width:100%;padding:12px;background:#00a884;color:#fff;border:none;border-radius:8px;margin-top:10px;font-weight:bold}
-#callScreen{position:fixed;inset:0;background:#0a332c;z-index:100;display:none;flex-direction:column}
-#remoteVideo{flex:1;background:#111;display:flex;align-items:center;justify-content:center;color:#fff}
-#localVideo{position:absolute;bottom:90px;right:15px;width:110px;height:160px;background:#333;border-radius:12px;border:2px solid #fff}
-.call-controls{height:80px;background:#0006;display:flex;align-items:center;justify-content:center}
-.call-btn{width:55px;height:55px;border-radius:50%;border:none;background:#ff3b30;color:#fff}
+body{margin:0;font-family:sans-serif;background:#111;color:#fff}
+#join{position:fixed;inset:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;z-index:99}
+#join div{width:90%;max-width:320px;padding:20px}
+input{width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:8px}
+button{width:100%;padding:12px;background:#25D366;color:#fff;border:0;border-radius:8px;font-weight:bold}
+#header{height:50px;background:#075E54;display:flex;align-items:center;padding:0 10px}
+#msgs{height:calc(100vh - 110px);overflow:auto;padding:10px;background:#e5ddd5}
+.bubble{padding:8px 10px;border-radius:8px;margin:5px 0;color:#000;max-width:70%}
+.me{background:#dcf8c6;margin-left:auto}
+.other{background:#fff}
+#inputBar{position:fixed;bottom:0;width:100%;height:50px;background:#f0f0f0;display:flex;padding:5px;gap:5px}
+#inputBar input{flex:1;margin:0}
+#videoBox{position:fixed;inset:0;background:#000;z-index:50;display:none}
+#myVideo{position:absolute;width:110px;height:140px;right:10px;bottom:80px;border:2px solid #fff;border-radius:8px}
+#end{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:red;color:#fff;border:0;padding:10px 20px;border-radius:20px}
 </style>
 </head>
 <body>
-<div class="header">
-  <div class="top-ico" id="top1"><svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></div>
-  <div class="avatar"><img src="https://picsum.photos/100"></div>
-  <div class="name" id="roomTitle">ruang-tes-123</div>
-  <div class="top-right">
-    <div class="top-ico" id="top3"><svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 10l-4 2v4l4 2V10z" fill="black"/></svg></div>
-    <div class="top-ico" id="top4"><svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 5.07 8.81 19.79 19.79 0 0 1 2 0.18 2 2 0 0 1 4.11 0h3a2 2 0 0 1 2 1.72c.12 1.3.4 2.57.82 3.8a2 2 0 0 1-.45 2.11L9 9a16 16 0 0 0 6 6l1.37-1.37a2 2 0 0 1 2.11-.45c1.23.42 2.5.7 3.8.82A2 2 0 0 1 22 16.92z"/></svg></div>
-    <div class="top-ico" id="top5"><svg viewBox="0 0 24 24" fill="black"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
-  </div>
-</div>
-<div class="chat-area" id="msgs"></div>
-<div id="callScreen"><div id="remoteVideo">Menunggu...</div><div id="localVideo"></div><div class="call-controls"><button class="call-btn" id="endCallBtn">✕</button></div></div>
-<div class="input-bar">
-  <div class="input-box">
-    <div class="ico" id="icon1"><svg viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9" r="1" fill="#666"/><circle cx="15" cy="9" r="1" fill="#666"/></svg></div>
-    <input id="txt" placeholder="Ketik pesan">
-    <div class="ico" id="icon2"><svg viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></div>
-    <div class="ico" id="icon3"><svg viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
-  </div>
-  <div class="mic-foto" id="btnKirim"><svg id="micIcon" viewBox="0 0 24 24" width="26" height="26" fill="white"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" stroke-width="2"/><path d="M12 19v3" fill="none" stroke="white" stroke-width="2"/><path d="M8 23h8" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/></svg></div>
-</div>
-<div id="joinModal"><div class="join-card"><h3>Masuk Room</h3><input id="room" value="ruang-tes-123"><input id="myName" placeholder="Nama kamu"><button id="join">Masuk</button></div></div>
+<div id="join"><div><h3>Masuk Room FIX</h3><input id="roomIn" value="1"><input id="nameIn" placeholder="Nama kamu"><button onclick="join()">Masuk</button></div></div>
+<div id="header"><span id="roomName"></span><span style="margin-left:auto;font-size:22px" onclick="startVideo()">📹</span></div>
+<div id="msgs"></div>
+<div id="inputBar"><input id="txt" placeholder="Ketik"><button onclick="send()">➤</button></div>
+<div id="videoBox"><div id="remoteVideo" style="width:100%;height:100%"></div><div id="myVideo"></div><button id="end" onclick="stopCall()">Tutup</button></div>
 <script>
-const APP_ID="cf22b9c1495d4cc89b36a9a81f9cfa16";
-const TOKEN_URL="https://masguntoro-token.vercel.app";
-let rtm, rtmCh, channelName="", myName="", rtcClient, localAudio, localVideoTrack, isSend=false;
-function addMsg(t,cls){ const d=document.createElement("div"); d.className="msg "+cls; d.innerHTML=`${t}<span class="time">${new Date().toLocaleTimeString().slice(0,5)}</span>`; document.getElementById("msgs").appendChild(d); document.getElementById("msgs").scrollTop=99999; }
-document.getElementById("join").onclick=async()=>{ channelName=document.getElementById("room").value.trim(); myName=document.getElementById("myName").value.trim()||"Saya"; document.getElementById("joinModal").style.display="none"; document.getElementById("roomTitle").innerText=channelName; addMsg("Kamu bergabung ke "+channelName,"me"); rtm=AgoraRTM.createInstance(APP_ID); await rtm.login({uid:String(Math.floor(Math.random()*99999))}); rtmCh=rtm.createChannel(channelName); await rtmCh.join(); rtmCh.on("ChannelMessage",({text})=>{ const dd=JSON.parse(text); addMsg(dd.name+": "+dd.msg,"you"); }); };
-async function getToken(ch){ try{ const r=await fetch(TOKEN_URL+"/api/rtc-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({channelName:ch,uid:0})}); const d=await r.json(); return d.token||d.rtcToken; }catch(e){ return null; } }
-async function send(){ const inp=document.getElementById("txt"); const t=inp.value.trim(); if(!t) return; addMsg("Kamu: "+t,"me"); inp.value=""; updateTombol(); if(rtmCh) await rtmCh.sendMessage({text:JSON.stringify({name:myName,msg:t})}); }
-document.getElementById("top1").onclick=()=>location.reload();
-async function startCall(v){ const token=await getToken(channelName); rtcClient=AgoraRTC.createClient({mode:"rtc",codec:"vp8"}); await rtcClient.join(APP_ID,channelName,token,null); localAudio=await AgoraRTC.createMicrophoneAudioTrack(); await rtcClient.publish(localAudio); document.getElementById("callScreen").style.display="flex"; if(v){ localVideoTrack=await AgoraRTC.createCameraVideoTrack(); localVideoTrack.play(document.getElementById("localVideo")); await rtcClient.publish(localVideoTrack); } rtcClient.on("user-published", async (u,mt)=>{ await rtcClient.subscribe(u,mt); if(mt==="video") u.videoTrack.play(document.getElementById("remoteVideo")); if(mt==="audio") u.audioTrack.play(); }); }
-document.getElementById("top3").onclick=()=>startCall(true); document.getElementById("top4").onclick=()=>startCall(false);
-document.getElementById("endCallBtn").onclick=async()=>{ if(localAudio) localAudio.close(); if(localVideoTrack) localVideoTrack.close(); if(rtcClient) await rtcClient.leave(); document.getElementById("callScreen").style.display="none"; };
-document.getElementById("top5").onclick=()=>alert("Room: "+channelName);
-const txt=document.getElementById("txt"); const btn=document.getElementById("btnKirim");
-function updateTombol(){ if(txt.value.trim().length>0){ isSend=true; btn.innerHTML=`<svg viewBox="0 0 24 24" width="26" height="26" fill="white"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>`; }else{ isSend=false; btn.innerHTML=`<svg viewBox="0 0 24 24" width="26" height="26" fill="white"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" stroke-width="2"/><path d="M12 19v3" fill="none" stroke="white" stroke-width="2"/><path d="M8 23h8" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`; } }
-txt.addEventListener("input",updateTombol); txt.addEventListener("keypress",e=>{ if(e.key==="Enter") send(); }); btn.addEventListener("click",()=>{ if(isSend) send(); });
-document.getElementById("icon2").onclick=()=>{ let i=document.createElement("input"); i.type="file"; i.onchange=ev=>{ let f=ev.target.files[0]; if(f) addMsg(`📎 <b>${f.name}</b>`,"me"); }; i.click(); };
-document.getElementById("icon3").onclick=async()=>{ try{ let s=await navigator.mediaDevices.getUserMedia({video:true}); let v=document.createElement("video"); v.srcObject=s; v.autoplay=true; v.style.cssText="position:fixed;inset:0;width:100%;height:100%;z-index:60;object-fit:cover;background:#000"; document.body.appendChild(v); v.onclick=()=>{ let c=document.createElement("canvas"); c.width=v.videoWidth; c.height=v.videoHeight; c.getContext("2d").drawImage(v,0,0); let url=c.toDataURL("image/jpeg",0.8); addMsg(`<img src="${url}" style="max-width:220px;border-radius:8px">`,"me"); s.getTracks().forEach(t=>t.stop()); v.remove(); }; }catch(e){ alert("Kamera tidak diizinkan"); } };
-updateTombol();
+var cfg={databaseURL:"https://chat-fix-1a-default-rtdb.firebaseio.com/"};firebase.initializeApp(cfg);
+var APP_ID="cc59dc5a6c0d4fd09c6ca3cf5f5c11f4";var TOKEN_URL="/api/rtc-token";
+var channel,myName,dbRef,rtcClient,localAudio,localVideo;
+function join(){channel=document.getElementById('roomIn').value.trim();myName=document.getElementById('nameIn').value.trim();if(!myName){alert('Isi nama');return}document.getElementById('join').style.display='none';document.getElementById('roomName').innerText=channel;dbRef=firebase.database().ref('fix/'+channel);dbRef.on('child_added',s=>{var d=s.val();var div=document.createElement('div');div.className='bubble '+(d.name===myName?'me':'other');div.innerHTML='<b>'+d.name+'</b><br>'+d.text;document.getElementById('msgs').appendChild(div);document.getElementById('msgs').scrollTop=9999;});dbRef.push({name:myName,text:'gabung'});}
+function send(){var t=document.getElementById('txt').value.trim();if(!t)return;dbRef.push({name:myName,text:t});document.getElementById('txt').value='';}
+async function getToken(){try{var r=await fetch(TOKEN_URL+'?channel='+channel+'&uid=0');var j=await r.json();return j.token}catch(e){return null}}
+async function startVideo(){document.getElementById('videoBox').style.display='block';rtcClient=AgoraRTC.createClient({mode:'rtc',codec:'vp8'});var tok=await getToken();await rtcClient.join(APP_ID,channel,tok||null,null);localVideo=await AgoraRTC.createCameraVideoTrack();localVideo.play(document.getElementById('myVideo'));localAudio=await AgoraRTC.createMicrophoneAudioTrack();await rtcClient.publish([localAudio,localVideo]);rtcClient.on('user-published',async(u,m)=>{await rtcClient.subscribe(u,m);if(m==='video')u.videoTrack.play(document.getElementById('remoteVideo'));if(m==='audio')u.audioTrack.play();});}
+async function stopCall(){try{if(localAudio)localAudio.close();if(localVideo)localVideo.close();await rtcClient.leave()}catch(e){}document.getElementById('videoBox').style.display='none';}
 </script>
 </body>
 </html>
